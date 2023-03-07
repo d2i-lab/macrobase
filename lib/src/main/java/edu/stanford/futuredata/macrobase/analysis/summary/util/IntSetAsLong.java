@@ -126,6 +126,16 @@ public class IntSetAsLong implements IntSet {
     }
 
     /**
+     * !! Only support integer packing up to order 3
+     */
+    public int getFourth() { return 0; }
+
+    /**
+     * !! Only support integer packing up to order 3
+     */
+    public int getFifth() { return 0; }
+
+    /**
      * Check if setLong contains queryLong.
      * @param query An integer.
      * @return Does setLong contain querylong?
