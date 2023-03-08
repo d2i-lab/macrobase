@@ -76,9 +76,9 @@ public abstract class BatchSummarizer implements Operator<DataFrame, Explanation
     }
 
     public BatchSummarizer setMaxOrder(final int maxOrder) throws MacroBaseException {
-        if (maxOrder < 1 || maxOrder > 3) {
+        if (maxOrder < 1 || maxOrder > 5) {
             throw new MacroBaseException("Max Order " + maxOrder +
-                " cannot be less than 1 or greater than 3");
+                " cannot be less than 1 or greater than 5");
         }
         this.maxOrder = maxOrder;
         return this;

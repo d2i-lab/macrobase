@@ -40,8 +40,8 @@ public class APrioriLinear {
         for (int i = 0; i < thresholds.size(); i++) {
             this.thresholds[i] = thresholds.get(i);
         }
-        this.setNext = new HashMap<>(3);
-        this.savedAggregates = new HashMap<>(3);
+        this.setNext = new HashMap<>(5);
+        this.savedAggregates = new HashMap<>(5);
     }
 
     public List<APLExplanationResult> explain(
@@ -60,8 +60,12 @@ public class APrioriLinear {
         final boolean useIntSetAsArray;
         // 2097151 is 2^21 - 1, the largest value that can fit in a length-three IntSetAsLong.
         // If the cardinality is greater than that, don't use them.
-        if (cardinality >= 2097151) {
-            log.warn("Cardinality is extremely high.  Candidate generation will be slow.");
+        if (cardinality >= 2097151 || maxOrder > 3) {
+            if (cardinality >= 2097151) {
+                log.warn("Cardinality is extremely high. Candidate generation will be slow.");
+            } else {
+                log.warn("Experimental: generating summaries for order > 3.");
+            }
             useIntSetAsArray = true;
         } else{
             useIntSetAsArray = false;
@@ -225,6 +229,100 @@ public class APrioriLinear {
                                 }
                             }
                         }
+                    } else if (curOrderFinal == 4) {
+                        for (int colNumOne = 0; colNumOne < numColumns; colNumOne++) {
+                            int[] curColumnOneAttributes = byThreadAttributesTranspose[curThreadNum][colNumOne % numColumns];
+                            for (int colNumTwo = colNumOne + 1; colNumTwo < numColumns; colNumTwo++) {
+                                int[] curColumnTwoAttributes = byThreadAttributesTranspose[curThreadNum][colNumTwo % numColumns];
+                                for (int colnumThree = colNumTwo + 1; colnumThree < numColumns; colnumThree++) {
+                                    int[] curColumnThreeAttributes = byThreadAttributesTranspose[curThreadNum][colnumThree % numColumns];
+                                    for (int colnumFour = colnumThree + 1; colnumFour < numColumns; colnumFour++) {
+                                        int[] curColumnFourAttributes = byThreadAttributesTranspose[curThreadNum][colnumFour % numColumns];
+                                        for (int rowNum = startIndex; rowNum < endIndex; rowNum++) {
+                                            int rowNumInCol = rowNum - startIndex;
+                                            // Only construct a triple if all its singleton members have minimum support.
+                                            if (curColumnOneAttributes[rowNumInCol] == AttributeEncoder.noSupport
+                                                    || curColumnTwoAttributes[rowNumInCol] == AttributeEncoder.noSupport
+                                                    || curColumnThreeAttributes[rowNumInCol] == AttributeEncoder.noSupport
+                                                    || curColumnFourAttributes[rowNumInCol] == AttributeEncoder.noSupport
+                                                    || !singleNextArray[curColumnFourAttributes[rowNumInCol]]
+                                                    || !singleNextArray[curColumnThreeAttributes[rowNumInCol]]
+                                                    || !singleNextArray[curColumnOneAttributes[rowNumInCol]]
+                                                    || !singleNextArray[curColumnTwoAttributes[rowNumInCol]])
+                                                continue;
+                                            // Cascade to arrays. Packing to long not supported for order > 3
+                                            List<Integer> sorted = new ArrayList<>();
+                                            sorted.add(curColumnOneAttributes[rowNumInCol]);
+                                            sorted.add(curColumnTwoAttributes[rowNumInCol]);
+                                            sorted.add(curColumnThreeAttributes[rowNumInCol]);
+                                            sorted.add(curColumnFourAttributes[rowNumInCol]);
+                                            Collections.sort(sorted);
+                                            curCandidate = new IntSetAsArray(sorted);
+
+                                            double[] candidateVal = thisThreadSetAggregates.get(curCandidate);
+                                            if (candidateVal == null) {
+                                                thisThreadSetAggregates.put(curCandidate,
+                                                        Arrays.copyOf(aRows[rowNum], numAggregates));
+                                            } else {
+                                                for (int a = 0; a < numAggregates; a++) {
+                                                    candidateVal[a] += aRows[rowNum][a];
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else if (curOrderFinal == 5) {
+                        for (int colNumOne = 0; colNumOne < numColumns; colNumOne++) {
+                            int[] curColumnOneAttributes = byThreadAttributesTranspose[curThreadNum][colNumOne % numColumns];
+                            for (int colNumTwo = colNumOne + 1; colNumTwo < numColumns; colNumTwo++) {
+                                int[] curColumnTwoAttributes = byThreadAttributesTranspose[curThreadNum][colNumTwo % numColumns];
+                                for (int colnumThree = colNumTwo + 1; colnumThree < numColumns; colnumThree++) {
+                                    int[] curColumnThreeAttributes = byThreadAttributesTranspose[curThreadNum][colnumThree % numColumns];
+                                    for (int colnumFour = colnumThree + 1; colnumFour < numColumns; colnumFour++) {
+                                        int[] curColumnFourAttributes = byThreadAttributesTranspose[curThreadNum][colnumFour % numColumns];
+                                        for (int colnumFive = colnumFour + 1; colnumFive < numColumns; colnumFive++) {
+                                            int[] curColumnFiveAttributes = byThreadAttributesTranspose[curThreadNum][colnumFive % numColumns];
+                                            for (int rowNum = startIndex; rowNum < endIndex; rowNum++) {
+                                                int rowNumInCol = rowNum - startIndex;
+                                                // Only construct a triple if all its singleton members have minimum support.
+                                                if (curColumnOneAttributes[rowNumInCol] == AttributeEncoder.noSupport
+                                                        || curColumnTwoAttributes[rowNumInCol] == AttributeEncoder.noSupport
+                                                        || curColumnThreeAttributes[rowNumInCol] == AttributeEncoder.noSupport
+                                                        || curColumnFourAttributes[rowNumInCol] == AttributeEncoder.noSupport
+                                                        || curColumnFiveAttributes[rowNumInCol] == AttributeEncoder.noSupport
+                                                        || !singleNextArray[curColumnFiveAttributes[rowNumInCol]]
+                                                        || !singleNextArray[curColumnFourAttributes[rowNumInCol]]
+                                                        || !singleNextArray[curColumnThreeAttributes[rowNumInCol]]
+                                                        || !singleNextArray[curColumnOneAttributes[rowNumInCol]]
+                                                        || !singleNextArray[curColumnTwoAttributes[rowNumInCol]])
+                                                    continue;
+                                                // Cascade to arrays. Packing to long not supported for order > 3
+                                                List<Integer> sorted = new ArrayList<>();
+                                                sorted.add(curColumnOneAttributes[rowNumInCol]);
+                                                sorted.add(curColumnTwoAttributes[rowNumInCol]);
+                                                sorted.add(curColumnThreeAttributes[rowNumInCol]);
+                                                sorted.add(curColumnFourAttributes[rowNumInCol]);
+                                                sorted.add(curColumnFiveAttributes[rowNumInCol]);
+                                                Collections.sort(sorted);
+                                                curCandidate = new IntSetAsArray(sorted);
+
+                                                double[] candidateVal = thisThreadSetAggregates.get(curCandidate);
+                                                if (candidateVal == null) {
+                                                    thisThreadSetAggregates.put(curCandidate,
+                                                            Arrays.copyOf(aRows[rowNum], numAggregates));
+                                                } else {
+                                                    for (int a = 0; a < numAggregates; a++) {
+                                                        candidateVal[a] += aRows[rowNum][a];
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     } else {
                         throw new MacroBaseInternalError("High Order not supported");
                     }
@@ -292,7 +390,8 @@ public class APrioriLinear {
                     }
                     if (action == QualityMetric.Action.KEEP) {
                         // Make sure the candidate isn't already covered by a pair
-                        if (curOrder != 3 || validateCandidate(curCandidate, setNext.get(2))) {
+                        if (curOrder < 3 || curOrder == 3 && validateCandidateO3(curCandidate, setNext.get(2))
+                                || curOrder == 4 && validateCandidateO4(curCandidate, setNext.get(3))) {
                             // if a set is already past the threshold on all metrics,
                             // save it and no need for further exploration if we do containment
                             curOrderSaved.add(curCandidate);
@@ -344,7 +443,7 @@ public class APrioriLinear {
      * @param curCandidate An order-3 candidate
      * @return Boolean
      */
-    private boolean validateCandidate(IntSet curCandidate,
+    private boolean validateCandidateO3(IntSet curCandidate,
                                       HashSet<IntSet> o2Candidates) {
             IntSet subPair;
             subPair = new IntSetAsArray(
@@ -363,6 +462,43 @@ public class APrioriLinear {
                     }
                 }
             }
+        return false;
+    }
+
+    /**
+     * Check if all subsets of an order-4 candidate are order-3 candidates.
+     * @param o3Candidates All candidates of order 3 with minimum support.
+     * @param curCandidate An order-4 candidate
+     * @return Boolean
+     */
+    private boolean validateCandidateO4(IntSet curCandidate,
+                                      HashSet<IntSet> o3Candidates) {
+        IntSet subPair;
+        subPair = new IntSetAsArray(
+                curCandidate.getFirst(),
+                curCandidate.getSecond(),
+                curCandidate.getThird());
+        if (o3Candidates.contains(subPair)) {
+            subPair = new IntSetAsArray(
+                    curCandidate.getSecond(),
+                    curCandidate.getThird(),
+                    curCandidate.getFourth());
+            if (o3Candidates.contains(subPair)) {
+                subPair = new IntSetAsArray(
+                        curCandidate.getFirst(),
+                        curCandidate.getThird(),
+                        curCandidate.getFourth());
+                if (o3Candidates.contains(subPair)) {
+                    subPair = new IntSetAsArray(
+                            curCandidate.getFirst(),
+                            curCandidate.getSecond(),
+                            curCandidate.getFourth());
+                    if (o3Candidates.contains(subPair)) {
+                        return true;
+                    }
+                }
+            }
+        }
         return false;
     }
 }

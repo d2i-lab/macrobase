@@ -6,6 +6,8 @@ public interface IntSet {
     int getFirst();
     int getSecond();
     int getThird();
+    int getFourth();
+    int getFifth();
     boolean contains(int query);
     Set<Integer> getSet();
 }

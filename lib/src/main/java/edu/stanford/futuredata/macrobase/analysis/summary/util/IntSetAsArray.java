@@ -1,5 +1,6 @@
 package edu.stanford.futuredata.macrobase.analysis.summary.util;
 
+import java.util.List;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -55,6 +56,12 @@ public class IntSetAsArray implements IntSet {
         values[2] = c;
     }
 
+    public IntSetAsArray(List<Integer> list) {
+        values = new int[list.size()];
+        for (int i = 0; i < list.size(); i++)
+            values[i] = list.get(i);
+    }
+
     /*
      * Hand-rolled three-integer sort.  Extremely performant and saves a lot of time in the
      * apriori/aplinear implementation versus just calling sort.
@@ -107,6 +114,14 @@ public class IntSetAsArray implements IntSet {
 
     public int getThird() {
         return values[2];
+    }
+
+    public int getFourth() {
+        return values[3];
+    }
+
+    public int getFifth() {
+        return values[4];
     }
 
     public Set<Integer> getSet() {

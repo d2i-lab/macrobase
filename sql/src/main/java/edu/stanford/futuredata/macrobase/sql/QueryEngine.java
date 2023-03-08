@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.Lists;
 import edu.stanford.futuredata.macrobase.analysis.MBFunction;
 import edu.stanford.futuredata.macrobase.analysis.summary.aplinear.APLOutlierSummarizer;
+import edu.stanford.futuredata.macrobase.analysis.summary.fpg.FPGrowthSummarizer;
 import edu.stanford.futuredata.macrobase.datamodel.DataFrame;
 import edu.stanford.futuredata.macrobase.datamodel.Schema.ColType;
 import edu.stanford.futuredata.macrobase.ingest.CSVDataFrameParser;
@@ -185,6 +186,14 @@ class QueryEngine {
             .setOutlierColumn(outlierColName)
             .setAttributes(explainCols)
             .setNumThreads(numThreads);
+        // FP growth summarizer: need to udpate output format
+//        FPGrowthSummarizer summarizer = new FPGrowthSummarizer();
+//        summarizer.setRatioMetric(ratioMetric)
+//                .setMaxOrder(order)
+//                .setMinSupport(minSupport)
+//                .setMinRatioMetric(minRatioMetric)
+//                .setOutlierColumn(outlierColName)
+//                .setAttributes(explainCols);
 
         try {
             summarizer.process(dfToExplain);
